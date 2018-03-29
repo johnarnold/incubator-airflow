@@ -15,6 +15,7 @@
 import subprocess
 import time
 import os
+import json
 
 from celery import Celery
 from celery import states as celery_states
@@ -50,6 +51,7 @@ def execute_command(command):
     log = LoggingMixin().log
     log.info("Executing command in Celery: %s", command)
     env = os.environ.copy()
+    log.info("AIRFLOW_HOME: {}".format(env['AIRFLOW_HOME']))
     try:
         subprocess.check_call(command, shell=True, stderr=subprocess.STDOUT,
                               close_fds=True, env=env)
