@@ -115,6 +115,7 @@ class BaseTaskRunner(LoggingMixin):
         """
         cmd = [" ".join(self._command)] if join_args else self._command
         full_cmd = run_with + cmd
+        env = os.environ.copy()
         self.log.info('Running: %s', full_cmd)
         proc = subprocess.Popen(
             full_cmd,
@@ -122,6 +123,7 @@ class BaseTaskRunner(LoggingMixin):
             stderr=subprocess.STDOUT,
             universal_newlines=True,
             close_fds=True,
+            env=env,
         )
 
         # Start daemon thread to read subprocess logging output
