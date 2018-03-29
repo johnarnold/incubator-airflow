@@ -51,9 +51,9 @@ def execute_command(command):
     log = LoggingMixin().log
     log.info("Executing command in Celery: %s", command)
     env = os.environ.copy()
-    log.info("AIRFLOW_HOME: {}".format(env['AIRFLOW_HOME']))
-    log.info("PATH: {}".format(env['PATH']))
-    log.info("VIRTUAL_ENV: {}".format(env['VIRTUAL_ENV']))
+    log.info("AIRFLOW_HOME: {}".format(env.get('AIRFLOW_HOME')))
+    log.info("PATH: {}".format(env.get('PATH')))
+    log.info("VIRTUAL_ENV: {}".format(env.get('VIRTUAL_ENV')))
     try:
         subprocess.check_call(command, shell=True, stderr=subprocess.STDOUT,
                               close_fds=True, env=env)
