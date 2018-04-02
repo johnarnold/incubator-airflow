@@ -76,7 +76,7 @@ class BaseJob(Base, LoggingMixin):
     __tablename__ = "job"
 
     id = Column(Integer, primary_key=True)
-    dag_id = Column(String(ID_LEN),)
+    dag_id = Column(String(ID_LEN), )
     state = Column(String(20))
     job_type = Column(String(30))
     start_date = Column(UtcDateTime())
@@ -96,10 +96,10 @@ class BaseJob(Base, LoggingMixin):
     )
 
     def __init__(
-            self,
-            executor=executors.GetDefaultExecutor(),
-            heartrate=conf.getfloat('scheduler', 'JOB_HEARTBEAT_SEC'),
-            *args, **kwargs):
+        self,
+        executor=executors.GetDefaultExecutor(),
+        heartrate=conf.getfloat('scheduler', 'JOB_HEARTBEAT_SEC'),
+        *args, **kwargs):
         self.hostname = get_hostname()
         self.executor = executor
         self.executor_class = executor.__class__.__name__
@@ -232,13 +232,13 @@ class BaseJob(Base, LoggingMixin):
         if filter_by_dag_run is None:
             resettable_tis = (
                 session
-                .query(TI)
-                .join(
+                    .query(TI)
+                    .join(
                     DR,
                     and_(
                         TI.dag_id == DR.dag_id,
                         TI.execution_date == DR.execution_date))
-                .filter(
+                    .filter(
                     DR.state == State.RUNNING,
                     DR.run_id.notlike(BackfillJob.ID_PREFIX + '%'),
                     TI.state.in_(resettable_states))).all()
@@ -259,10 +259,10 @@ class BaseJob(Base, LoggingMixin):
             return []
         reset_tis = (
             session
-            .query(TI)
-            .filter(or_(*filter_for_tis), TI.state.in_(resettable_states))
-            .with_for_update()
-            .all())
+                .query(TI)
+                .filter(or_(*filter_for_tis), TI.state.in_(resettable_states))
+                .with_for_update()
+                .all())
         for ti in reset_tis:
             ti.state = State.NONE
             session.merge(ti)
@@ -338,6 +338,7 @@ class DagFileProcessor(AbstractDagFileProcessor, LoggingMixin):
         :return: the process that was launched
         :rtype: multiprocessing.Process
         """
+
         def helper():
             # This helper runs in the newly created process
             log = logging.getLogger("airflow.processor")
@@ -505,18 +506,18 @@ class SchedulerJob(BaseJob):
     }
 
     def __init__(
-            self,
-            dag_id=None,
-            dag_ids=None,
-            subdir=settings.DAGS_FOLDER,
-            num_runs=-1,
-            file_process_interval=conf.getint('scheduler',
-                                              'min_file_process_interval'),
-            processor_poll_interval=1.0,
-            run_duration=None,
-            do_pickle=False,
-            log=None,
-            *args, **kwargs):
+        self,
+        dag_id=None,
+        dag_ids=None,
+        subdir=settings.DAGS_FOLDER,
+        num_runs=-1,
+        file_process_interval=conf.getint('scheduler',
+                                          'min_file_process_interval'),
+        processor_poll_interval=1.0,
+        run_duration=None,
+        do_pickle=False,
+        log=None,
+        *args, **kwargs):
         """
         :param dag_id: if specified, only schedule tasks with this DAG ID
         :type dag_id: unicode
@@ -598,14 +599,14 @@ class SchedulerJob(BaseJob):
         TI = models.TaskInstance
         sq = (
             session
-            .query(
+                .query(
                 TI.task_id,
                 func.max(TI.execution_date).label('max_ti'))
-            .with_hint(TI, 'USE INDEX (PRIMARY)', dialect_name='mysql')
-            .filter(TI.dag_id == dag.dag_id)
-            .filter(TI.state == State.SUCCESS)
-            .filter(TI.task_id.in_(dag.task_ids))
-            .group_by(TI.task_id).subquery('sq')
+                .with_hint(TI, 'USE INDEX (PRIMARY)', dialect_name='mysql')
+                .filter(TI.dag_id == dag.dag_id)
+                .filter(TI.state == State.SUCCESS)
+                .filter(TI.task_id.in_(dag.task_ids))
+                .group_by(TI.task_id).subquery('sq')
         )
 
         max_tis = session.query(TI).filter(
@@ -634,21 +635,21 @@ class SchedulerJob(BaseJob):
 
         slas = (
             session
-            .query(SlaMiss)
-            .filter(SlaMiss.notification_sent == False)
-            .filter(SlaMiss.dag_id == dag.dag_id)
-            .all()
+                .query(SlaMiss)
+                .filter(SlaMiss.notification_sent == False)
+                .filter(SlaMiss.dag_id == dag.dag_id)
+                .all()
         )
 
         if slas:
             sla_dates = [sla.execution_date for sla in slas]
             qry = (
                 session
-                .query(TI)
-                .filter(TI.state != State.SUCCESS)
-                .filter(TI.execution_date.in_(sla_dates))
-                .filter(TI.dag_id == dag.dag_id)
-                .all()
+                    .query(TI)
+                    .filter(TI.state != State.SUCCESS)
+                    .filter(TI.execution_date.in_(sla_dates))
+                    .filter(TI.dag_id == dag.dag_id)
+                    .all()
             )
             blocking_tis = []
             for ti in qry:
@@ -770,8 +771,8 @@ class SchedulerJob(BaseJob):
             timedout_runs = 0
             for dr in active_runs:
                 if (
-                        dr.start_date and dag.dagrun_timeout and
-                        dr.start_date < timezone.utcnow() - dag.dagrun_timeout):
+                            dr.start_date and dag.dagrun_timeout and
+                            dr.start_date < timezone.utcnow() - dag.dagrun_timeout):
                     dr.state = State.FAILED
                     dr.end_date = timezone.utcnow()
                     dag.handle_callback(dr, success=False, reason='dagrun_timeout',
@@ -784,8 +785,8 @@ class SchedulerJob(BaseJob):
             # this query should be replaced by find dagrun
             qry = (
                 session.query(func.max(DagRun.execution_date))
-                .filter_by(dag_id=dag.dag_id)
-                .filter(or_(
+                    .filter_by(dag_id=dag.dag_id)
+                    .filter(or_(
                     DagRun.external_trigger == False,
                     # add % as a wildcard for the like query
                     DagRun.run_id.like(DagRun.ID_PREFIX + '%')
@@ -939,8 +940,8 @@ class SchedulerJob(BaseJob):
                     continue
 
                 if ti.are_dependencies_met(
-                        dep_context=DepContext(flag_upstream_failed=True),
-                        session=session):
+                    dep_context=DepContext(flag_upstream_failed=True),
+                    session=session):
                     self.log.debug('Queuing task: %s', ti)
                     queue.append(ti.key)
 
@@ -969,13 +970,13 @@ class SchedulerJob(BaseJob):
         query = session \
             .query(models.TaskInstance) \
             .outerjoin(models.DagRun, and_(
-                models.TaskInstance.dag_id == models.DagRun.dag_id,
-                models.TaskInstance.execution_date == models.DagRun.execution_date)) \
+            models.TaskInstance.dag_id == models.DagRun.dag_id,
+            models.TaskInstance.execution_date == models.DagRun.execution_date)) \
             .filter(models.TaskInstance.dag_id.in_(simple_dag_bag.dag_ids)) \
             .filter(models.TaskInstance.state.in_(old_states)) \
             .filter(or_(
-                models.DagRun.state != State.RUNNING,
-                models.DagRun.state.is_(None)))
+            models.DagRun.state != State.RUNNING,
+            models.DagRun.state.is_(None)))
         if self.using_sqlite:
             tis_to_change = query \
                 .with_for_update() \
@@ -988,9 +989,9 @@ class SchedulerJob(BaseJob):
             tis_changed = session \
                 .query(models.TaskInstance) \
                 .filter(and_(
-                    models.TaskInstance.dag_id == subq.c.dag_id,
-                    models.TaskInstance.execution_date ==
-                    subq.c.execution_date)) \
+                models.TaskInstance.dag_id == subq.c.dag_id,
+                models.TaskInstance.execution_date ==
+                subq.c.execution_date)) \
                 .update({models.TaskInstance.state: new_state},
                         synchronize_session=False)
             session.commit()
@@ -1015,9 +1016,9 @@ class SchedulerJob(BaseJob):
         TI = models.TaskInstance
         ti_concurrency_query = (
             session
-            .query(TI.task_id, TI.dag_id, func.count('*'))
-            .filter(TI.state.in_(states))
-            .group_by(TI.task_id, TI.dag_id)
+                .query(TI.task_id, TI.dag_id, func.count('*'))
+                .filter(TI.state.in_(states))
+                .group_by(TI.task_id, TI.dag_id)
         ).all()
         task_map = defaultdict(int)
         for result in ti_concurrency_query:
@@ -1053,16 +1054,16 @@ class SchedulerJob(BaseJob):
         DM = models.DagModel
         ti_query = (
             session
-            .query(TI)
-            .filter(TI.dag_id.in_(simple_dag_bag.dag_ids))
-            .outerjoin(DR,
-                and_(DR.dag_id == TI.dag_id,
-                     DR.execution_date == TI.execution_date))
-            .filter(or_(DR.run_id == None,
-                    not_(DR.run_id.like(BackfillJob.ID_PREFIX + '%'))))
-            .outerjoin(DM, DM.dag_id==TI.dag_id)
-            .filter(or_(DM.dag_id == None,
-                    not_(DM.is_paused)))
+                .query(TI)
+                .filter(TI.dag_id.in_(simple_dag_bag.dag_ids))
+                .outerjoin(DR,
+                           and_(DR.dag_id == TI.dag_id,
+                                DR.execution_date == TI.execution_date))
+                .filter(or_(DR.run_id == None,
+                            not_(DR.run_id.like(BackfillJob.ID_PREFIX + '%'))))
+                .outerjoin(DM, DM.dag_id == TI.dag_id)
+                .filter(or_(DM.dag_id == None,
+                            not_(DM.is_paused)))
         )
         if None in states:
             ti_query = ti_query.filter(or_(TI.state == None, TI.state.in_(states)))
@@ -1218,8 +1219,8 @@ class SchedulerJob(BaseJob):
                 for ti in task_instances])
         ti_query = (
             session
-            .query(TI)
-            .filter(or_(*filter_for_ti_state_change)))
+                .query(TI)
+                .filter(or_(*filter_for_ti_state_change)))
 
         if None in acceptable_states:
             ti_query = ti_query.filter(or_(TI.state == None, TI.state.in_(acceptable_states)))
@@ -1228,8 +1229,8 @@ class SchedulerJob(BaseJob):
 
         tis_to_set_to_queued = (
             ti_query
-            .with_for_update()
-            .all())
+                .with_for_update()
+                .all())
         if len(tis_to_set_to_queued) == 0:
             self.log.info("No tasks were able to have their state changed to queued.")
             session.commit()
@@ -1245,17 +1246,17 @@ class SchedulerJob(BaseJob):
 
         # save which TIs we set before session expires them
         filter_for_ti_enqueue = ([and_(TI.dag_id == ti.dag_id,
-                                  TI.task_id == ti.task_id,
-                                  TI.execution_date == ti.execution_date)
-                             for ti in tis_to_set_to_queued])
+                                       TI.task_id == ti.task_id,
+                                       TI.execution_date == ti.execution_date)
+                                  for ti in tis_to_set_to_queued])
         session.commit()
 
         # requery in batch since above was expired by commit
         tis_to_be_queued = (
             session
-            .query(TI)
-            .filter(or_(*filter_for_ti_enqueue))
-            .all())
+                .query(TI)
+                .filter(or_(*filter_for_ti_enqueue))
+                .all())
 
         task_instance_str = "\n\t".join(
             ["{}".format(x) for x in tis_to_be_queued])
@@ -1348,7 +1349,7 @@ class SchedulerJob(BaseJob):
         else:
             # makes chunks of max_tis_per_query size
             chunks = ([executable_tis[i:i + self.max_tis_per_query]
-                      for i in range(0, len(executable_tis), self.max_tis_per_query)])
+                       for i in range(0, len(executable_tis), self.max_tis_per_query)])
             total_tis_queued = 0
             for chunk in chunks:
                 tis_with_state_changed = self._change_state_for_executable_task_instances(
@@ -1435,9 +1436,9 @@ class SchedulerJob(BaseJob):
                         ti.task = dag.get_task(task_id)
                         ti.handle_failure(msg)
                     except Exception:
-                        self.log.error("Cannot load the dag bag to handle failure for %s"
-                                       ". Setting task to FAILED without callbacks or "
-                                       "retries. Do you have enough resources?", ti)
+                        self.log.exception("Cannot load the dag bag to handle failure for %s"
+                                           ". Setting task to FAILED without callbacks or "
+                                           "retries. Do you have enough resources?", ti)
                         ti.state = State.FAILED
                         session.merge(ti)
                         session.commit()
@@ -1514,7 +1515,7 @@ class SchedulerJob(BaseJob):
         # DAGs can be pickled for easier remote execution by some executors
         pickle_dags = False
         if self.do_pickle and self.executor.__class__ not in \
-                (executors.LocalExecutor, executors.SequentialExecutor):
+            (executors.LocalExecutor, executors.SequentialExecutor):
             pickle_dags = True
 
         # Use multiple processes to parse and generate tasks for the
@@ -1605,7 +1606,7 @@ class SchedulerJob(BaseJob):
 
         # For the execute duration, parse and schedule DAGs
         while (timezone.utcnow() - execute_start_time).total_seconds() < \
-                self.run_duration or self.run_duration < 0:
+            self.run_duration or self.run_duration < 0:
             self.log.debug("Starting Loop...")
             loop_start_time = time.time()
 
@@ -1638,7 +1639,6 @@ class SchedulerJob(BaseJob):
             # Send tasks for execution if available
             simple_dag_bag = SimpleDagBag(simple_dags)
             if len(simple_dags) > 0:
-
                 # Handle cases where a DAG run state is set (perhaps manually) to
                 # a non-running state. Handle task instances that belong to
                 # DAG runs in those states
@@ -1810,9 +1810,9 @@ class SchedulerJob(BaseJob):
             # dependencies twice; once to get the task scheduled, and again to actually
             # run the task. We should try to come up with a way to only check them once.
             if ti.are_dependencies_met(
-                    dep_context=dep_context,
-                    session=session,
-                    verbose=True):
+                dep_context=dep_context,
+                session=session,
+                verbose=True):
                 # Task starts out in the scheduled state. All tasks in the
                 # scheduled state will be sent to the executor
                 ti.state = State.SCHEDULED
@@ -1863,6 +1863,7 @@ class BackfillJob(BaseJob):
         execution of dag runs / tasks can be included in this structure since it makes
         it easier to pass it around.
         """
+
         # TODO(edgarRd): AIRFLOW-1444: Add consistency check on counts
         def __init__(self,
                      to_run=None,
@@ -1914,18 +1915,18 @@ class BackfillJob(BaseJob):
             self.total_runs = total_runs
 
     def __init__(
-            self,
-            dag,
-            start_date=None,
-            end_date=None,
-            mark_success=False,
-            include_adhoc=False,
-            donot_pickle=False,
-            ignore_first_depends_on_past=False,
-            ignore_task_deps=False,
-            pool=None,
-            delay_on_limit_secs=1.0,
-            *args, **kwargs):
+        self,
+        dag,
+        start_date=None,
+        end_date=None,
+        mark_success=False,
+        include_adhoc=False,
+        donot_pickle=False,
+        ignore_first_depends_on_past=False,
+        ignore_task_deps=False,
+        pool=None,
+        delay_on_limit_secs=1.0,
+        *args, **kwargs):
         self.dag = dag
         self.dag_id = dag.dag_id
         self.bf_start_date = start_date
@@ -2050,7 +2051,7 @@ class BackfillJob(BaseJob):
         # enforce max_active_runs limit for dag, special cases already
         # handled by respect_dag_max_active_limit
         if (respect_dag_max_active_limit and
-                current_active_dag_count >= self.dag.max_active_runs):
+                    current_active_dag_count >= self.dag.max_active_runs):
             return None
 
         run = run or self.dag.create_dagrun(
@@ -2157,7 +2158,7 @@ class BackfillJob(BaseJob):
         executed_run_dates = []
 
         while ((len(ti_status.to_run) > 0 or len(ti_status.started) > 0) and
-                len(ti_status.deadlocked) == 0):
+                       len(ti_status.deadlocked) == 0):
             self.log.debug("*** Clearing out not_ready list ***")
             ti_status.not_ready.clear()
 
@@ -2228,9 +2229,9 @@ class BackfillJob(BaseJob):
                     # Is the task runnable? -- then run it
                     # the dependency checker can change states of tis
                     if ti.are_dependencies_met(
-                            dep_context=backfill_context,
-                            session=session,
-                            verbose=True):
+                        dep_context=backfill_context,
+                        session=session,
+                        verbose=True):
                         ti.refresh_from_db(lock_for_update=True, session=session)
                         if ti.state == State.SCHEDULED or ti.state == State.UP_FOR_RETRY:
                             if executor.has_task(ti):
@@ -2290,8 +2291,8 @@ class BackfillJob(BaseJob):
             # tasks to run and there are no running tasks then the backfill
             # is deadlocked
             if (ti_status.not_ready and
-                    ti_status.not_ready == set(ti_status.to_run) and
-                    len(ti_status.started) == 0):
+                        ti_status.not_ready == set(ti_status.to_run) and
+                        len(ti_status.started) == 0):
                 self.log.warning(
                     "Deadlock discovered for ti_status.to_run=%s",
                     ti_status.to_run.values()
@@ -2417,7 +2418,7 @@ class BackfillJob(BaseJob):
         # picklin'
         pickle_id = None
         if not self.donot_pickle and self.executor.__class__ not in (
-                executors.LocalExecutor, executors.SequentialExecutor):
+            executors.LocalExecutor, executors.SequentialExecutor):
             pickle = models.DagPickle(self.dag)
             session.add(pickle)
             session.commit()
@@ -2463,22 +2464,21 @@ class BackfillJob(BaseJob):
 
 
 class LocalTaskJob(BaseJob):
-
     __mapper_args__ = {
         'polymorphic_identity': 'LocalTaskJob'
     }
 
     def __init__(
-            self,
-            task_instance,
-            ignore_all_deps=False,
-            ignore_depends_on_past=False,
-            ignore_task_deps=False,
-            ignore_ti_state=False,
-            mark_success=False,
-            pickle_id=None,
-            pool=None,
-            *args, **kwargs):
+        self,
+        task_instance,
+        ignore_all_deps=False,
+        ignore_depends_on_past=False,
+        ignore_task_deps=False,
+        ignore_ti_state=False,
+        mark_success=False,
+        pickle_id=None,
+        pool=None,
+        *args, **kwargs):
         self.task_instance = task_instance
         self.ignore_all_deps = ignore_all_deps
         self.ignore_depends_on_past = ignore_depends_on_past
@@ -2502,16 +2502,17 @@ class LocalTaskJob(BaseJob):
             self.log.error("Killing subprocess")
             self.on_kill()
             raise AirflowException("LocalTaskJob received SIGTERM signal")
+
         signal.signal(signal.SIGTERM, signal_handler)
 
         if not self.task_instance._check_and_change_state_before_execution(
-                mark_success=self.mark_success,
-                ignore_all_deps=self.ignore_all_deps,
-                ignore_depends_on_past=self.ignore_depends_on_past,
-                ignore_task_deps=self.ignore_task_deps,
-                ignore_ti_state=self.ignore_ti_state,
-                job_id=self.id,
-                pool=self.pool):
+            mark_success=self.mark_success,
+            ignore_all_deps=self.ignore_all_deps,
+            ignore_depends_on_past=self.ignore_depends_on_past,
+            ignore_task_deps=self.ignore_task_deps,
+            ignore_ti_state=self.ignore_ti_state,
+            job_id=self.id,
+            pool=self.pool):
             self.log.info("Task is not able to be run")
             return
 
@@ -2577,13 +2578,13 @@ class LocalTaskJob(BaseJob):
         if ti.state == State.RUNNING:
             if not same_hostname:
                 self.log.warning("The recorded hostname {ti.hostname} "
-                                "does not match this instance's hostname "
-                                "{fqdn}".format(**locals()))
+                                 "does not match this instance's hostname "
+                                 "{fqdn}".format(**locals()))
                 raise AirflowException("Hostname of job runner does not match")
             elif not same_process:
                 current_pid = os.getpid()
                 self.log.warning("Recorded pid {ti.pid} does not match the current pid "
-                                "{current_pid}".format(**locals()))
+                                 "{current_pid}".format(**locals()))
                 raise AirflowException("PID of job runner does not match")
         elif (self.task_runner.return_code() is None
               and hasattr(self.task_runner, 'process')):
