@@ -128,7 +128,9 @@ class BaseExecutor(LoggingMixin):
             ti.refresh_from_db()
             if ti.state != State.RUNNING:
                 self.running[key] = command
-                self.execute_async(key, command=command, queue=queue)
+                uid = self.execute_async(key, command=command, queue=queue)
+                if uid:
+                    ti.set_uid(uid)
             else:
                 self.log.debug(
                     'Task is already running, not sending to executor: %s',

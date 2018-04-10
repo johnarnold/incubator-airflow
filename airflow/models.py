@@ -816,6 +816,7 @@ class TaskInstance(Base, LoggingMixin):
     operator = Column(String(1000))
     queued_dttm = Column(UtcDateTime)
     pid = Column(Integer)
+    uid = Column(String(ID_LEN), index=True)
 
     __table_args__ = (
         Index('ti_dag_state', dag_id, state),
@@ -851,6 +852,7 @@ class TaskInstance(Base, LoggingMixin):
         self.max_tries = self.task.retries
         self.unixname = getpass.getuser()
         self.run_as_user = task.run_as_user
+        self.uid = None
         if state:
             self.state = state
         self.hostname = ''
@@ -867,7 +869,7 @@ class TaskInstance(Base, LoggingMixin):
     @property
     def try_number(self):
         """
-        Return the try number that this task number will be when it is acutally
+        Return the try number that this task number will be when it is actually
         run.
 
         If the TI is currently running, this will match the column in the
@@ -1106,6 +1108,12 @@ class TaskInstance(Base, LoggingMixin):
         """
         self.log.error("Recording the task instance as FAILED")
         self.state = State.FAILED
+        session.merge(self)
+        session.commit()
+
+    @provide_session
+    def set_uid(self, uid, session=None):
+        self.uid = uid
         session.merge(self)
         session.commit()
 
